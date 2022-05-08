@@ -5,10 +5,11 @@ import {
   faInfoCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import axios from "../../api/axios";
 
 const USER_REGEX = /^[A-z][A-z0-9-_]{3,23}$/;
 const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%]).{8,24}$/;
-
+const REGISTER_URL = "/register";
 const SignInPage = () => {
   const userRef = useRef();
   const errRef = useRef();
@@ -51,14 +52,40 @@ const SignInPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // if button enabled with JS hack
     const v1 = USER_REGEX.test(user);
     const v2 = PWD_REGEX.test(pwd);
     if (!v1 || !v2) {
-      setErrMsg("Entrer inavalide");
+      setErrMsg("Invalid Entry");
       return;
     }
-    console.log(user, pwd);
-    setSuccess(true);
+    try {
+      const response = await axios.post(
+        REGISTER_URL,
+        JSON.stringify({ user, pwd }),
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      console.log(response?.data);
+      console.log(response?.accessToken);
+      console.log(JSON.stringify(response));
+      setSuccess(true);
+
+      setUser("");
+      setPwd("");
+      setMatchPwd("");
+    } catch (err) {
+      if (!err?.response) {
+        setErrMsg("Aucune réponse du serveur");
+      } else if (err.response?.status === 409) {
+        setErrMsg("Nom d’utilisateur pris");
+      } else {
+        setErrMsg("Échec de l’enregistrement");
+      }
+      errRef.current.focus();
+    }
   };
 
   return (
